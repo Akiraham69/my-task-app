@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TaskMaster - List, Calendar & Gantt Chart</title>
+  <title>TaskMaster - Executive Dashboard</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
@@ -29,12 +29,12 @@
   <header class="bg-indigo-900 text-white shadow-md">
     <div class="max-w-7xl mx-auto px-4 py-4 flex flex-wrap justify-between items-center gap-4">
       <div class="flex items-center gap-3">
-        <div class="bg-indigo-600 p-2 rounded-lg text-white">
+        <div class="bg-indigo-600 p-2 rounded-lg text-white shadow">
           <i data-lucide="check-square" class="w-6 h-6"></i>
         </div>
         <div>
           <h1 class="text-xl font-bold tracking-wide">TaskMaster Pro</h1>
-          <p class="text-xs text-indigo-200">ระบบจัดการงาน 3 มุมมอง (List + Calendar + Gantt)</p>
+          <p class="text-xs text-indigo-200">ระบบจัดการงาน 3 มุมมอง + Executive Daily Briefing</p>
         </div>
       </div>
 
@@ -69,7 +69,78 @@
   </div>
 
   <!-- Main Content Container -->
-  <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full">
+  <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full space-y-6">
+
+    <!-- EXECUTIVE SUMMARY WIDGET -->
+    <section class="bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+      <!-- Decorative background blur -->
+      <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+      <div class="flex flex-wrap justify-between items-start gap-4 mb-6 border-b border-indigo-700/50 pb-4">
+        <div>
+          <div class="flex items-center gap-2 text-indigo-300 text-xs font-semibold uppercase tracking-wider mb-1">
+            <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i> Executive Summary Widget
+          </div>
+          <h2 class="text-xl font-bold">สรุปภารกิจประจำวันนี้ 📌</h2>
+          <p id="summaryDateText" class="text-xs text-indigo-200 mt-0.5">ประจำวันที่ ...</p>
+        </div>
+        <div class="bg-indigo-950/60 border border-indigo-600/40 px-3 py-1.5 rounded-xl flex items-center gap-2 text-xs text-indigo-200">
+          <i data-lucide="bot" class="w-4 h-4 text-emerald-400"></i>
+          <span>เลขาไนน์สแตนบายคอยซัพพอร์ตบอสค๊า!</span>
+        </div>
+      </div>
+
+      <!-- Quick Stats Grid -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white/10 backdrop-blur border border-white/10 rounded-xl p-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs text-indigo-200 font-medium">งานทั้งหมดวันนี้</span>
+            <i data-lucide="target" class="w-4 h-4 text-indigo-300"></i>
+          </div>
+          <div id="statTodayTotal" class="text-2xl font-bold">0</div>
+          <p class="text-[10px] text-indigo-300 mt-1">ที่ตรงกับกำหนดการวันนี้</p>
+        </div>
+
+        <div class="bg-white/10 backdrop-blur border border-white/10 rounded-xl p-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs text-amber-200 font-medium">กำลังดำเนินการ</span>
+            <i data-lucide="clock" class="w-4 h-4 text-amber-400"></i>
+          </div>
+          <div id="statTodayInProgress" class="text-2xl font-bold text-amber-300">0</div>
+          <p class="text-[10px] text-indigo-300 mt-1">อยู่ในช่วงเร่งมือทำ</p>
+        </div>
+
+        <div class="bg-white/10 backdrop-blur border border-white/10 rounded-xl p-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs text-emerald-200 font-medium">เสร็จสิ้นแล้ว</span>
+            <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+          </div>
+          <div id="statTodayDone" class="text-2xl font-bold text-emerald-300">0</div>
+          <p class="text-[10px] text-indigo-300 mt-1">ปิดภารกิจเรียบร้อย</p>
+        </div>
+
+        <div class="bg-white/10 backdrop-blur border border-white/10 rounded-xl p-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs text-rose-200 font-medium">ความคืบหน้าเฉลี่ย</span>
+            <i data-lucide="activity" class="w-4 h-4 text-rose-300"></i>
+          </div>
+          <div id="statTodayProgressAvg" class="text-2xl font-bold text-white">0%</div>
+          <div class="w-full bg-indigo-950 rounded-full h-1.5 mt-2 overflow-hidden">
+            <div id="statTodayProgressBar" class="bg-emerald-400 h-1.5 transition-all duration-500" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Today Focus Tasks List -->
+      <div class="bg-black/20 rounded-xl p-4 border border-white/5">
+        <h3 class="text-xs font-semibold text-indigo-200 uppercase tracking-wider mb-3 flex items-center gap-2">
+          <i data-lucide="list-checks" class="w-4 h-4 text-amber-400"></i> รายการภารกิจที่ต้องโฟกัสวันนี้ (Today's Focus)
+        </h3>
+        <div id="todayTasksList" class="space-y-2 text-sm">
+          <!-- Dynamically Populated -->
+        </div>
+      </div>
+    </section>
 
     <!-- LIST VIEW -->
     <div id="view-list" class="view-content space-y-4">
@@ -187,21 +258,8 @@
           <input type="url" id="supabaseUrl" placeholder="https://xyzcompany.supabase.co" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
         </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">Supabase Anon Public Key</label>
-          <textarea id="supabaseKey" rows="2" placeholder="eyJhbGciOiJIUzI1NiIsIn..." class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 outline-none"></textarea>
-        </div>
-
-        <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800 space-y-1">
-          <p class="font-semibold">💡 วิธีการสร้างตาราง `tasks` ใน Supabase:</p>
-          <p>สร้าง Table ชื่อ <code class="bg-amber-100 px-1 rounded">tasks</code> ให้มีคอลัมน์ดังนี้:</p>
-          <ul class="list-disc list-inside text-[11px] space-y-0.5">
-            <li><code class="font-mono">id</code> (text, primary key)</li>
-            <li><code class="font-mono">title</code> (text)</li>
-            <li><code class="font-mono">status</code> (text)</li>
-            <li><code class="font-mono">start_date</code> (text)</li>
-            <li><code class="font-mono">due_date</code> (text)</li>
-            <li><code class="font-mono">progress</code> (int4)</li>
-          </ul>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Supabase Anon Public Key / Publishable Key</label>
+          <textarea id="supabaseKey" rows="2" placeholder="sb_publishable_... หรือ eyJhbGciOi..." class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 outline-none"></textarea>
         </div>
 
         <div class="flex justify-between items-center pt-2">
@@ -225,6 +283,10 @@
     let calendar = null;
     let ganttChart = null;
 
+    // Hardcoded credentials fallback (if configured)
+    const HARDCODED_URL = ''; // Paste your Supabase URL here if desired
+    const HARDCODED_KEY = ''; // Paste your Publishable key here if desired
+
     // Initial Load
     document.addEventListener('DOMContentLoaded', () => {
       lucide.createIcons();
@@ -239,16 +301,11 @@
       document.getElementById('taskDueDate').value = today;
     }
 
-// --- Cloud / LocalStorage Logic ---
-    // ใส่ URL และ Key ของบอสตรงนี้ได้เลยค่ะ (ให้เชื่อมต่ออัตโนมัติตลอดเวลา)
-    const HARDCODED_URL = 'https://sasjbtxbogwvakzlxxwy.supabase.co'; // 👈 วาง Supabase Project URL ของบอสที่นี่
-    const HARDCODED_KEY = 'sb_publishable_I0TXa0fT8obfBlFKPqeNaw_8NS1xs2Z';     // 👈 วาง Publishable Key ของบอสที่นี่
-
+    // --- Cloud / LocalStorage Logic ---
     function initCloudConnection() {
       const url = localStorage.getItem('sb_url') || HARDCODED_URL;
       const key = localStorage.getItem('sb_key') || HARDCODED_KEY;
-      
-      if (url && key && window.supabase && !url.includes('xxxx')) {
+      if (url && key && window.supabase && url.length > 5) {
         try {
           supabaseClient = supabase.createClient(url, key);
           document.getElementById('supabaseUrl').value = url;
@@ -282,10 +339,11 @@
         const local = localStorage.getItem('mytasks_data');
         tasks = local ? JSON.parse(local) : [
           { id: '1', title: 'ประชุมวางแผนการตลาด', status: 'in-progress', startDate: getTodayOffset(0), dueDate: getTodayOffset(3), progress: 50 },
-          { id: '2', title: 'เตรียมสไลด์พรีเซนต์', status: 'todo', startDate: getTodayOffset(2), dueDate: getTodayOffset(5), progress: 10 },
-          { id: '3', title: 'ส่งเอกสารอนุมัติ', status: 'done', startDate: getTodayOffset(-3), dueDate: getTodayOffset(-1), progress: 100 }
+          { id: '2', title: 'เตรียมสไลด์พรีเซนต์', status: 'todo', startDate: getTodayOffset(0), dueDate: getTodayOffset(2), progress: 10 },
+          { id: '3', title: 'ส่งเอกสารอนุมัติ', status: 'done', startDate: getTodayOffset(-3), dueDate: getTodayOffset(0), progress: 100 }
         ];
       }
+      renderExecutiveSummary();
       renderCurrentView();
     }
 
@@ -299,6 +357,94 @@
       const d = new Date();
       d.setDate(d.getDate() + days);
       return d.toISOString().split('T')[0];
+    }
+
+    // --- Executive Summary Widget Logic ---
+    function renderExecutiveSummary() {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const thaiDateFormatter = new Intl.DateTimeFormat('th-TH', { dateStyle: 'full' });
+      document.getElementById('summaryDateText').innerText = `วัน${thaiDateFormatter.format(new Date())}`;
+
+      // Filter tasks active today (startDate <= today <= dueDate)
+      const todayTasks = tasks.filter(t => {
+        return t.startDate <= todayStr && t.dueDate >= todayStr;
+      });
+
+      const inProgress = todayTasks.filter(t => t.status === 'in-progress');
+      const done = todayTasks.filter(t => t.status === 'done');
+      
+      const totalProgress = todayTasks.length > 0
+        ? Math.round(todayTasks.reduce((acc, t) => acc + (t.progress || 0), 0) / todayTasks.length)
+        : 0;
+
+      document.getElementById('statTodayTotal').innerText = todayTasks.length;
+      document.getElementById('statTodayInProgress').innerText = inProgress.length;
+      document.getElementById('statTodayDone').innerText = done.length;
+      document.getElementById('statTodayProgressAvg').innerText = `${totalProgress}%`;
+      document.getElementById('statTodayProgressBar').style.width = `${totalProgress}%`;
+
+      // Render today focus list
+      const focusContainer = document.getElementById('todayTasksList');
+      if (todayTasks.length === 0) {
+        focusContainer.innerHTML = `<p class="text-indigo-300 text-xs py-2 italic">✨ วันนี้ไม่มีภารกิจค้าง บอสสามารถเพิ่มงานใหม่หรือพักผ่อนได้เลยค๊า!</p>`;
+      } else {
+        focusContainer.innerHTML = todayTasks.map(t => {
+          const badge = t.status === 'done'
+            ? '<span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] px-2 py-0.5 rounded-full">เสร็จแล้ว</span>'
+            : t.status === 'in-progress'
+            ? '<span class="bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] px-2 py-0.5 rounded-full">กำลังทำ</span>'
+            : '<span class="bg-indigo-500/20 text-indigo-200 border border-indigo-500/30 text-[10px] px-2 py-0.5 rounded-full">ยังไม่เริ่ม</span>';
+
+          return `
+            <div class="flex items-center justify-between bg-white/5 hover:bg-white/10 p-2.5 rounded-lg border border-white/10 transition">
+              <div class="flex items-center gap-3">
+                <button onclick="quickToggleDone('${t.id}')" class="text-indigo-300 hover:text-emerald-400">
+                  <i data-lucide="${t.status === 'done' ? 'check-circle-2' : 'circle'}" class="w-4 h-4"></i>
+                </button>
+                <span class="${t.status === 'done' ? 'line-through text-indigo-300/60' : 'text-white font-medium'}">${t.title}</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="text-xs text-indigo-200">${t.progress}%</span>
+                ${badge}
+                <button onclick="editTask('${t.id}')" class="text-indigo-300 hover:text-white p-1"><i data-lucide="edit-2" class="w-3.5 h-3.5"></i></button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+      lucide.createIcons();
+    }
+
+    async function quickToggleDone(id) {
+      const task = tasks.find(t => String(t.id) === String(id));
+      if (!task) return;
+      
+      if (task.status === 'done') {
+        task.status = 'in-progress';
+        task.progress = 50;
+      } else {
+        task.status = 'done';
+        task.progress = 100;
+      }
+
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('tasks').upsert({
+            id: task.id,
+            title: task.title,
+            start_date: task.startDate,
+            due_date: task.dueDate,
+            status: task.status,
+            progress: task.progress
+          });
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      saveTasksToStorage();
+      renderExecutiveSummary();
+      renderCurrentView();
     }
 
     // --- View Switching ---
@@ -375,7 +521,7 @@
         id: t.id,
         title: t.title,
         start: t.startDate,
-        end: addDays(t.dueDate, 1), // FullCalendar exclusive end date
+        end: addDays(t.dueDate, 1),
         color: t.status === 'done' ? '#10b981' : t.status === 'in-progress' ? '#f59e0b' : '#6366f1'
       }));
 
@@ -412,7 +558,7 @@
       }
 
       const ganttTasks = tasks.map(t => ({
-        id: t.id,
+        id: String(t.id),
         name: t.title,
         start: t.startDate,
         end: t.dueDate,
@@ -465,7 +611,6 @@
         progress: parseInt(document.getElementById('taskProgress').value) || 0
       };
 
-      // 👈 แก้จุดนี้: แปลงเป็น String ก่อนเปรียบเทียบ
       const existingIndex = tasks.findIndex(t => String(t.id) === String(id));
 
       if (supabaseClient) {
@@ -489,11 +634,11 @@
 
       saveTasksToStorage();
       closeTaskModal();
+      renderExecutiveSummary();
       renderCurrentView();
     }
 
     function editTask(id) {
-      // 👈 แก้จุดนี้: แปลงเป็น String ก่อนค้นหา
       const task = tasks.find(t => String(t.id) === String(id));
       if (!task) return;
       document.getElementById('taskId').value = task.id;
@@ -517,12 +662,12 @@
         }
       }
 
-      // 👈 แก้จุดนี้: แปลงเป็น String ก่อนกรองออก
       tasks = tasks.filter(t => String(t.id) !== String(id));
       saveTasksToStorage();
+      renderExecutiveSummary();
       renderCurrentView();
     }
-    
+
     // --- Cloud Modal Logic ---
     function openCloudModal() {
       document.getElementById('cloudModal').classList.remove('hidden');
