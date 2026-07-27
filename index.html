@@ -465,7 +465,8 @@
         progress: parseInt(document.getElementById('taskProgress').value) || 0
       };
 
-      const existingIndex = tasks.findIndex(t => t.id === id);
+      // 👈 แก้จุดนี้: แปลงเป็น String ก่อนเปรียบเทียบ
+      const existingIndex = tasks.findIndex(t => String(t.id) === String(id));
 
       if (supabaseClient) {
         try {
@@ -492,7 +493,8 @@
     }
 
     function editTask(id) {
-      const task = tasks.find(t => t.id === id);
+      // 👈 แก้จุดนี้: แปลงเป็น String ก่อนค้นหา
+      const task = tasks.find(t => String(t.id) === String(id));
       if (!task) return;
       document.getElementById('taskId').value = task.id;
       document.getElementById('taskTitle').value = task.title;
@@ -515,11 +517,12 @@
         }
       }
 
-      tasks = tasks.filter(t => t.id !== id);
+      // 👈 แก้จุดนี้: แปลงเป็น String ก่อนกรองออก
+      tasks = tasks.filter(t => String(t.id) !== String(id));
       saveTasksToStorage();
       renderCurrentView();
     }
-
+    
     // --- Cloud Modal Logic ---
     function openCloudModal() {
       document.getElementById('cloudModal').classList.remove('hidden');
