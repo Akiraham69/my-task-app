@@ -239,11 +239,16 @@
       document.getElementById('taskDueDate').value = today;
     }
 
-    // --- Cloud / LocalStorage Logic ---
+// --- Cloud / LocalStorage Logic ---
+    // ใส่ URL และ Key ของบอสตรงนี้ได้เลยค่ะ (ให้เชื่อมต่ออัตโนมัติตลอดเวลา)
+    const HARDCODED_URL = 'https://sasjbtxbogwvakzlxxwy.supabase.co'; // 👈 วาง Supabase Project URL ของบอสที่นี่
+    const HARDCODED_KEY = 'sb_publishable_I0TXa0fT8obfBlFKPqeNaw_8NS1xs2Z';     // 👈 วาง Publishable Key ของบอสที่นี่
+
     function initCloudConnection() {
-      const url = localStorage.getItem('sb_url');
-      const key = localStorage.getItem('sb_key');
-      if (url && key && window.supabase) {
+      const url = localStorage.getItem('sb_url') || HARDCODED_URL;
+      const key = localStorage.getItem('sb_key') || HARDCODED_KEY;
+      
+      if (url && key && window.supabase && !url.includes('xxxx')) {
         try {
           supabaseClient = supabase.createClient(url, key);
           document.getElementById('supabaseUrl').value = url;
