@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TaskMaster - List, Calendar & Gantt Chart</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- FullCalendar CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+  <!-- Frappe Gantt CDN -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.css">
+  <script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js"></script>
+  <!-- Supabase JS CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap');
+    body { font-family: 'Kanit', sans-serif; }
+    .fc-event { cursor: pointer; border-radius: 6px; padding: 2px 5px; }
+    .gantt .bar-progress { fill: #3b82f6 !important; }
+    .gantt .bar { fill: #93c5fd !important; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="bg-indigo-900 text-white shadow-md">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex flex-wrap justify-between items-center gap-4">
+      <div class="flex items-center gap-3">
+        <div class="bg-indigo-600 p-2 rounded-lg text-white">
+          <i data-lucide="check-square" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-wide">TaskMaster Pro</h1>
+          <p class="text-xs text-indigo-200">ระบบจัดการงาน 3 มุมมอง (List + Calendar + Gantt)</p>
+        </div>
+      </div>
+
+      <!-- Cloud Status & Buttons -->
+      <div class="flex items-center gap-3">
+        <button id="cloudStatusBtn" onclick="openCloudModal()" class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-indigo-800 hover:bg-indigo-700 border border-indigo-600 text-indigo-100 transition">
+          <span id="cloudIndicator" class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+          <span id="cloudStatusText">โหมด Offline (Local)</span>
+          <i data-lucide="settings" class="w-3.5 h-3.5"></i>
+        </button>
+        <button onclick="openTaskModal()" class="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition">
+          <i data-lucide="plus" class="w-4 h-4"></i>
+          <span>เพิ่มงานใหม่</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <div class="bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 flex gap-2">
+      <button onclick="switchView('list')" id="tab-list" class="view-tab active flex items-center gap-2 py-3 px-5 font-medium border-b-2 border-indigo-600 text-indigo-600">
+        <i data-lucide="list" class="w-4 h-4"></i> รายการ (List)
+      </button>
+      <button onclick="switchView('calendar')" id="tab-calendar" class="view-tab flex items-center gap-2 py-3 px-5 font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800">
+        <i data-lucide="calendar" class="w-4 h-4"></i> ปฏิทิน (Calendar)
+      </button>
+      <button onclick="switchView('gantt')" id="tab-gantt" class="view-tab flex items-center gap-2 py-3 px-5 font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800">
+        <i data-lucide="bar-chart-2" class="w-4 h-4"></i> แผนภูมิแกนต์ (Gantt)
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Content Container -->
+  <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full">
+
+    <!-- LIST VIEW -->
+    <div id="view-list" class="view-content space-y-4">
+      <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+        <div class="flex gap-2">
+          <button onclick="filterTasks('all')" class="filter-btn text-xs px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 font-medium border border-indigo-200">ทั้งหมด</button>
+          <button onclick="filterTasks('todo')" class="filter-btn text-xs px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">ยังไม่เริ่ม</button>
+          <button onclick="filterTasks('in-progress')" class="filter-btn text-xs px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">กำลังทำ</button>
+          <button onclick="filterTasks('done')" class="filter-btn text-xs px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">เสร็จสิ้น</button>
+        </div>
+        <span id="taskCount" class="text-xs text-slate-500">จำนวนงานทั้งหมด: 0 งาน</span>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-50 border-b border-slate-200 text-xs text-slate-500 uppercase tracking-wider">
+                <th class="p-4">ชื่องาน</th>
+                <th class="p-4">สถานะ</th>
+                <th class="p-4">วันเริ่ม - กำหนดส่ง</th>
+                <th class="p-4">ความคืบหน้า</th>
+                <th class="p-4 text-center">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="taskListBody" class="divide-y divide-slate-100 text-sm">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- CALENDAR VIEW -->
+    <div id="view-calendar" class="view-content hidden">
+      <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 min-h-[600px]">
+        <div id="calendar"></div>
+      </div>
+    </div>
+
+    <!-- GANTT VIEW -->
+    <div id="view-gantt" class="view-content hidden">
+      <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="font-semibold text-slate-700">การมองเห็นกรอบเวลา (Gantt Chart Timeline)</h3>
+          <div class="flex gap-1 bg-slate-100 p-1 rounded-lg text-xs">
+            <button onclick="changeGanttMode('Day')" class="px-3 py-1 rounded bg-white shadow-sm font-medium">วัน</button>
+            <button onclick="changeGanttMode('Week')" class="px-3 py-1 rounded hover:bg-white transition">สัปดาห์</button>
+            <button onclick="changeGanttMode('Month')" class="px-3 py-1 rounded hover:bg-white transition">เดือน</button>
+          </div>
+        </div>
+        <div class="overflow-x-auto pb-4">
+          <svg id="gantt"></svg>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- TASK MODAL (ADD / EDIT) -->
+  <div id="taskModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 m-4 relative animate-in fade-in zoom-in duration-200">
+      <h3 id="modalTitle" class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+        <i data-lucide="edit-3" class="w-5 h-5 text-indigo-600"></i> เพิ่มงานใหม่
+      </h3>
+      <form id="taskForm" onsubmit="handleTaskSubmit(event)" class="space-y-4">
+        <input type="hidden" id="taskId">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">ชื่องาน / รายละเอียด</label>
+          <input type="text" id="taskTitle" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="เช่น จัดทำสไลด์พรีเซนต์...">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">วันเริ่มงาน</label>
+            <input type="date" id="taskStartDate" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">กำหนดส่ง (Due Date)</label>
+            <input type="date" id="taskDueDate" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">สถานะ</label>
+            <select id="taskStatus" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+              <option value="todo">ยังไม่เริ่ม</option>
+              <option value="in-progress">กำลังทำ</option>
+              <option value="done">เสร็จสิ้น</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">ความคืบหน้า (%)</label>
+            <input type="number" id="taskProgress" min="0" max="100" value="0" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+          </div>
+        </div>
+        <div class="flex justify-end gap-2 pt-4 border-t border-slate-100">
+          <button type="button" onclick="closeTaskModal()" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg font-medium">ยกเลิก</button>
+          <button type="submit" class="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium shadow">บันทึกงาน</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- CLOUD CONFIG MODAL -->
+  <div id="cloudModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 m-4 relative">
+      <h3 class="text-lg font-bold text-slate-800 mb-2 flex items-center gap-2">
+        <i data-lucide="cloud" class="w-5 h-5 text-indigo-600"></i> ตั้งค่าฐานข้อมูลออนไลน์ (Supabase)
+      </h3>
+      <p class="text-xs text-slate-500 mb-4">เชื่อมต่อกับ Supabase ฟรี เพื่อซิงค์ข้อมูลข้ามมือถือและคอมพิวเตอร์ของคุณได้ทุกที่</p>
+
+      <form id="cloudForm" onsubmit="handleCloudSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Supabase Project URL</label>
+          <input type="url" id="supabaseUrl" placeholder="https://xyzcompany.supabase.co" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Supabase Anon Public Key</label>
+          <textarea id="supabaseKey" rows="2" placeholder="eyJhbGciOiJIUzI1NiIsIn..." class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 outline-none"></textarea>
+        </div>
+
+        <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800 space-y-1">
+          <p class="font-semibold">💡 วิธีการสร้างตาราง `tasks` ใน Supabase:</p>
+          <p>สร้าง Table ชื่อ <code class="bg-amber-100 px-1 rounded">tasks</code> ให้มีคอลัมน์ดังนี้:</p>
+          <ul class="list-disc list-inside text-[11px] space-y-0.5">
+            <li><code class="font-mono">id</code> (text, primary key)</li>
+            <li><code class="font-mono">title</code> (text)</li>
+            <li><code class="font-mono">status</code> (text)</li>
+            <li><code class="font-mono">start_date</code> (text)</li>
+            <li><code class="font-mono">due_date</code> (text)</li>
+            <li><code class="font-mono">progress</code> (int4)</li>
+          </ul>
+        </div>
+
+        <div class="flex justify-between items-center pt-2">
+          <button type="button" onclick="disconnectCloud()" class="text-xs text-rose-600 hover:underline">สลับกลับมาใช้ Offline</button>
+          <div class="flex gap-2">
+            <button type="button" onclick="closeCloudModal()" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg">ยกเลิก</button>
+            <button type="submit" class="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium shadow">เชื่อมต่อ Cloud</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- JavaScript Logic -->
+  <script>
+    // App State
+    let tasks = [];
+    let currentFilter = 'all';
+    let currentView = 'list';
+    let supabaseClient = null;
+    let calendar = null;
+    let ganttChart = null;
+
+    // Initial Load
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      initDatesInModal();
+      initCloudConnection();
+      loadTasks();
+    });
+
+    function initDatesInModal() {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('taskStartDate').value = today;
+      document.getElementById('taskDueDate').value = today;
+    }
+
+    // --- Cloud / LocalStorage Logic ---
+    function initCloudConnection() {
+      const url = localStorage.getItem('sb_url');
+      const key = localStorage.getItem('sb_key');
+      if (url && key && window.supabase) {
+        try {
+          supabaseClient = supabase.createClient(url, key);
+          document.getElementById('supabaseUrl').value = url;
+          document.getElementById('supabaseKey').value = key;
+          document.getElementById('cloudIndicator').className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse';
+          document.getElementById('cloudStatusText').innerText = 'โหมด Online (Cloud)';
+        } catch (e) {
+          console.error("Cloud Connection Error:", e);
+        }
+      }
+    }
+
+    async function loadTasks() {
+      if (supabaseClient) {
+        try {
+          const { data, error } = await supabaseClient.from('tasks').select('*');
+          if (!error && data) {
+            tasks = data.map(t => ({
+              id: t.id,
+              title: t.title,
+              status: t.status,
+              startDate: t.start_date,
+              dueDate: t.due_date,
+              progress: t.progress || 0
+            }));
+          }
+        } catch (err) {
+          console.error("Error loading from cloud:", err);
+        }
+      } else {
+        const local = localStorage.getItem('mytasks_data');
+        tasks = local ? JSON.parse(local) : [
+          { id: '1', title: 'ประชุมวางแผนการตลาด', status: 'in-progress', startDate: getTodayOffset(0), dueDate: getTodayOffset(3), progress: 50 },
+          { id: '2', title: 'เตรียมสไลด์พรีเซนต์', status: 'todo', startDate: getTodayOffset(2), dueDate: getTodayOffset(5), progress: 10 },
+          { id: '3', title: 'ส่งเอกสารอนุมัติ', status: 'done', startDate: getTodayOffset(-3), dueDate: getTodayOffset(-1), progress: 100 }
+        ];
+      }
+      renderCurrentView();
+    }
+
+    async function saveTasksToStorage() {
+      if (!supabaseClient) {
+        localStorage.setItem('mytasks_data', JSON.stringify(tasks));
+      }
+    }
+
+    function getTodayOffset(days) {
+      const d = new Date();
+      d.setDate(d.getDate() + days);
+      return d.toISOString().split('T')[0];
+    }
+
+    // --- View Switching ---
+    function switchView(view) {
+      currentView = view;
+      document.querySelectorAll('.view-tab').forEach(el => {
+        el.classList.remove('border-indigo-600', 'text-indigo-600');
+        el.classList.add('border-transparent', 'text-slate-500');
+      });
+      document.getElementById(`tab-${view}`).classList.add('border-indigo-600', 'text-indigo-600');
+
+      document.querySelectorAll('.view-content').forEach(el => el.classList.add('hidden'));
+      document.getElementById(`view-${view}`).classList.remove('hidden');
+
+      renderCurrentView();
+    }
+
+    function renderCurrentView() {
+      if (currentView === 'list') renderListView();
+      else if (currentView === 'calendar') renderCalendarView();
+      else if (currentView === 'gantt') renderGanttView();
+    }
+
+    // --- List View Rendering ---
+    function renderListView() {
+      const tbody = document.getElementById('taskListBody');
+      const filtered = tasks.filter(t => currentFilter === 'all' ? true : t.status === currentFilter);
+      document.getElementById('taskCount').innerText = `จำนวนงานทั้งหมด: ${filtered.length} งาน`;
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-slate-400">ยังไม่มีรายการงานในหมวดนี้</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(t => {
+        const badge = t.status === 'done' 
+          ? '<span class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-1 rounded-full font-medium">เสร็จสิ้น</span>'
+          : t.status === 'in-progress'
+          ? '<span class="bg-amber-100 text-amber-800 text-xs px-2.5 py-1 rounded-full font-medium">กำลังทำ</span>'
+          : '<span class="bg-slate-100 text-slate-600 text-xs px-2.5 py-1 rounded-full font-medium">ยังไม่เริ่ม</span>';
+
+        return `
+          <tr class="hover:bg-slate-50/80 transition">
+            <td class="p-4 font-medium text-slate-800">${t.title}</td>
+            <td class="p-4">${badge}</td>
+            <td class="p-4 text-xs text-slate-500">${t.startDate} ถึง ${t.dueDate}</td>
+            <td class="p-4">
+              <div class="w-32 bg-slate-200 rounded-full h-2">
+                <div class="bg-indigo-600 h-2 rounded-full" style="width: ${t.progress}%"></div>
+              </div>
+              <span class="text-[10px] text-slate-400">${t.progress}%</span>
+            </td>
+            <td class="p-4 text-center">
+              <button onclick="editTask('${t.id}')" class="p-1 text-slate-400 hover:text-indigo-600"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+              <button onclick="deleteTask('${t.id}')" class="p-1 text-slate-400 hover:text-rose-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    function filterTasks(status) {
+      currentFilter = status;
+      renderListView();
+    }
+
+    // --- Calendar View Rendering ---
+    function renderCalendarView() {
+      const calendarEl = document.getElementById('calendar');
+      calendarEl.innerHTML = '';
+
+      const events = tasks.map(t => ({
+        id: t.id,
+        title: t.title,
+        start: t.startDate,
+        end: addDays(t.dueDate, 1), // FullCalendar exclusive end date
+        color: t.status === 'done' ? '#10b981' : t.status === 'in-progress' ? '#f59e0b' : '#6366f1'
+      }));
+
+      calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        locale: 'th',
+        headerToolbar: {
+          left: 'prev,next today',
+          center: 'title',
+          right: 'dayGridMonth,timeGridWeek'
+        },
+        events: events,
+        eventClick: (info) => {
+          editTask(info.event.id);
+        }
+      });
+      calendar.render();
+    }
+
+    function addDays(dateStr, days) {
+      const res = new Date(dateStr);
+      res.setDate(res.getDate() + days);
+      return res.toISOString().split('T')[0];
+    }
+
+    // --- Gantt View Rendering ---
+    function renderGanttView() {
+      const ganttContainer = document.getElementById('gantt');
+      ganttContainer.innerHTML = '';
+
+      if (tasks.length === 0) {
+        ganttContainer.parentElement.innerHTML = '<p class="text-center py-8 text-slate-400">โปรดเพิ่มงานเพื่อแสดงผลใน Gantt Chart</p>';
+        return;
+      }
+
+      const ganttTasks = tasks.map(t => ({
+        id: t.id,
+        name: t.title,
+        start: t.startDate,
+        end: t.dueDate,
+        progress: t.progress
+      }));
+
+      ganttChart = new Gantt("#gantt", ganttTasks, {
+        header_height: 50,
+        column_width: 30,
+        step: 24,
+        view_modes: ['Day', 'Week', 'Month'],
+        bar_height: 20,
+        bar_corner_radius: 4,
+        arrow_curve: 5,
+        padding: 18,
+        view_mode: 'Day',
+        language: 'en',
+        on_click: task => editTask(task.id)
+      });
+    }
+
+    function changeGanttMode(mode) {
+      if (ganttChart) ganttChart.change_view_mode(mode);
+    }
+
+    // --- Task CRUD ---
+    function openTaskModal() {
+      document.getElementById('taskId').value = '';
+      document.getElementById('taskTitle').value = '';
+      document.getElementById('taskStatus').value = 'todo';
+      document.getElementById('taskProgress').value = '0';
+      initDatesInModal();
+      document.getElementById('modalTitle').innerText = 'เพิ่มงานใหม่';
+      document.getElementById('taskModal').classList.remove('hidden');
+    }
+
+    function closeTaskModal() {
+      document.getElementById('taskModal').classList.add('hidden');
+    }
+
+    async function handleTaskSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('taskId').value || Date.now().toString();
+      const taskObj = {
+        id: id,
+        title: document.getElementById('taskTitle').value,
+        startDate: document.getElementById('taskStartDate').value,
+        dueDate: document.getElementById('taskDueDate').value,
+        status: document.getElementById('taskStatus').value,
+        progress: parseInt(document.getElementById('taskProgress').value) || 0
+      };
+
+      const existingIndex = tasks.findIndex(t => t.id === id);
+
+      if (supabaseClient) {
+        try {
+          const { error } = await supabaseClient.from('tasks').upsert({
+            id: taskObj.id,
+            title: taskObj.title,
+            start_date: taskObj.startDate,
+            due_date: taskObj.dueDate,
+            status: taskObj.status,
+            progress: taskObj.progress
+          });
+          if (error) alert('เกิดข้อผิดพลาดในการบันทึกขึ้น Cloud: ' + error.message);
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      if (existingIndex > -1) tasks[existingIndex] = taskObj;
+      else tasks.push(taskObj);
+
+      saveTasksToStorage();
+      closeTaskModal();
+      renderCurrentView();
+    }
+
+    function editTask(id) {
+      const task = tasks.find(t => t.id === id);
+      if (!task) return;
+      document.getElementById('taskId').value = task.id;
+      document.getElementById('taskTitle').value = task.title;
+      document.getElementById('taskStartDate').value = task.startDate;
+      document.getElementById('taskDueDate').value = task.dueDate;
+      document.getElementById('taskStatus').value = task.status;
+      document.getElementById('taskProgress').value = task.progress;
+      document.getElementById('modalTitle').innerText = 'แก้ไขรายการงาน';
+      document.getElementById('taskModal').classList.remove('hidden');
+    }
+
+    async function deleteTask(id) {
+      if (!confirm('ยืนยันลบรายการงานนี้?')) return;
+      
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('tasks').delete().eq('id', id);
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      tasks = tasks.filter(t => t.id !== id);
+      saveTasksToStorage();
+      renderCurrentView();
+    }
+
+    // --- Cloud Modal Logic ---
+    function openCloudModal() {
+      document.getElementById('cloudModal').classList.remove('hidden');
+    }
+
+    function closeCloudModal() {
+      document.getElementById('cloudModal').classList.add('hidden');
+    }
+
+    function handleCloudSubmit(e) {
+      e.preventDefault();
+      const url = document.getElementById('supabaseUrl').value.trim();
+      const key = document.getElementById('supabaseKey').value.trim();
+
+      if (url && key) {
+        localStorage.setItem('sb_url', url);
+        localStorage.setItem('sb_key', key);
+        initCloudConnection();
+        loadTasks();
+        closeCloudModal();
+        alert('เชื่อมต่อ Supabase สำเร็จ!');
+      }
+    }
+
+    function disconnectCloud() {
+      localStorage.removeItem('sb_url');
+      localStorage.removeItem('sb_key');
+      supabaseClient = null;
+      document.getElementById('cloudIndicator').className = 'w-2.5 h-2.5 rounded-full bg-amber-400';
+      document.getElementById('cloudStatusText').innerText = 'โหมด Offline (Local)';
+      closeCloudModal();
+      loadTasks();
+      alert('สลับกลับมาใช้ Local Storage เรียบร้อยค่ะ');
+    }
+  </script>
+</body>
+</html>
