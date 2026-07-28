@@ -141,11 +141,18 @@
         </div>
       </div>
 
-      <!-- Today Focus Tasks List -->
+            <!-- Today Focus Tasks List -->
       <div class="bg-black/25 rounded-xl p-4 border border-white/5 space-y-2">
-        <h3 class="text-xs font-semibold text-indigo-200 uppercase tracking-wider mb-2 flex items-center gap-2">
-          <i data-lucide="list-checks" class="w-4 h-4 text-amber-400"></i> รายการภารกิจที่ต้องโฟกัสวันนี้ (Today's Focus)
-        </h3>
+        <div class="flex justify-between items-center mb-2">
+          <h3 class="text-xs font-semibold text-indigo-200 uppercase tracking-wider flex items-center gap-2">
+            <i data-lucide="list-checks" class="w-4 h-4 text-amber-400"></i> รายการภารกิจที่ต้องโฟกัสวันนี้ (Today's Focus)
+          </h3>
+          <!-- ปุ่ม Toggle ซ่อน/แสดง งานที่เสร็จแล้ว -->
+          <button type="button" onclick="toggleHideDoneToday()" id="hideDoneTodayBtn" class="text-[11px] bg-white/10 hover:bg-white/20 text-indigo-200 px-2.5 py-1 rounded-lg border border-white/10 transition flex items-center gap-1.5">
+            <i data-lucide="eye-off" class="w-3.5 h-3.5 text-amber-300"></i>
+            <span id="hideDoneTodayText">ซ่อนงานที่เสร็จแล้ว</span>
+          </button>
+        </div>
         <div id="todayTasksList" class="space-y-2 text-sm">
           <!-- Dynamically Populated -->
         </div>
@@ -525,6 +532,82 @@
       renderCurrentView();
     }
 
+    // เพิ่มตัวแปรสถานะ
+    let hideDoneToday = false;
+
+    // ฟังก์ชั่นสลับสถานะซ่อน/แสดง
+    function toggleHideDoneToday() {
+      hideDoneToday = !hideDoneToday;
+      const btnText = document.getElementById('hideDoneTodayText');
+      if (btnText) {
+        btnText.innerText = hideDoneToday ? 'แสดงงานทั้งหมด' : 'ซ่อนงานที่เสร็จแล้ว';
+      }
+      renderExecutiveSummary();
+    }
+
+    // ปรับปรุงการแสดงผล Executive Summary
+    function renderExecutiveSummary() {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const thaiDateFormatter = new Intl.DateTimeFormat('th-TH', { dateStyle: 'full' });
+      document.getElementById('summaryDateText').innerText = `วัน${thaiDateFormatter.format(new Date())}`;
+
+      const todayTasks = tasks.filter(t => t.startDate <= todayStr && t.dueDate >= todayStr);
+      const inProgress = todayTasks.filter(t => t.status === 'in-progress');
+      const done = todayTasks.filter(t => t.status === 'done');
+      const overdue = tasks.filter(t => t.dueDate < todayStr && t.status !== 'done');
+      
+      const totalProgress = todayTasks.length > 0
+        ? Math.round(todayTasks.reduce((acc, t) => acc + (t.progress || 0), 0) / todayTasks.length)
+        : 0;
+
+      // ตัวเลขการ์ดสรุปยังแสดงสถิติจริงครบถ้วนเหมือนเดิม
+      document.getElementById('statTodayTotal').innerText = todayTasks.length;
+      document.getElementById('statTodayInProgress').innerText = inProgress.length;
+      document.getElementById('statTodayDone').innerText = done.length;
+      document.getElementById('statOverdue').innerText = overdue.length;
+      document.getElementById('statTodayProgressAvg').innerText = `${totalProgress}%`;
+      document.getElementById('statTodayProgressBar').style.width = `${totalProgress}%`;
+
+      // กรองงานสำหรับแสดงในลิสต์ Focus ตามปุ่ม Toggle
+      const displayTasks = hideDoneToday 
+        ? todayTasks.filter(t => t.status !== 'done')
+        : todayTasks;
+
+      const focusContainer = document.getElementById('todayTasksList');
+      if (displayTasks.length === 0) {
+        focusContainer.innerHTML = hideDoneToday && todayTasks.length > 0
+          ? `<p class="text-indigo-300 text-xs py-2 italic">🎉 บอสทำภารกิจวันนี้เสร็จหมดแล้วค๊า! (กดแสดงงานเพื่อดูงานที่เสร็จแล้วได้ค่ะ)</p>`
+          : `<p class="text-indigo-300 text-xs py-2 italic">✨ วันนี้ไม่มีภารกิจค้าง บอสสามารถเพิ่มงานใหม่หรือพักผ่อนได้เลยค๊า!</p>`;
+      } else {
+        focusContainer.innerHTML = displayTasks.map(t => {
+          const prioBadge = t.priority === 'high' ? '🔴' : t.priority === 'medium' ? '🟡' : '🟢';
+          const badge = t.status === 'done'
+            ? '<span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] px-2 py-0.5 rounded-full">เสร็จแล้ว</span>'
+            : t.status === 'in-progress'
+            ? '<span class="bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] px-2 py-0.5 rounded-full">กำลังทำ</span>'
+            : '<span class="bg-indigo-500/20 text-indigo-200 border border-indigo-500/30 text-[10px] px-2 py-0.5 rounded-full">ยังไม่เริ่ม</span>';
+
+          return `
+            <div class="flex items-center justify-between bg-white/5 hover:bg-white/10 p-2.5 rounded-lg border border-white/10 transition">
+              <div class="flex items-center gap-2.5">
+                <button onclick="quickToggleDone('${t.id}')" class="text-indigo-300 hover:text-emerald-400">
+                  <i data-lucide="${t.status === 'done' ? 'check-circle-2' : 'circle'}" class="w-4 h-4"></i>
+                </button>
+                <span class="text-xs font-semibold px-2 py-0.5 rounded bg-indigo-950 text-indigo-200 border border-indigo-700">${t.tag || 'ทั่วไป'}</span>
+                <span class="${t.status === 'done' ? 'line-through text-indigo-300/60' : 'text-white font-medium'}">${prioBadge} ${t.title}</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="text-xs text-indigo-200">${t.progress}%</span>
+                ${badge}
+                <button onclick="editTask('${t.id}')" class="text-indigo-300 hover:text-white p-1"><i data-lucide="edit-2" class="w-3.5 h-3.5"></i></button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+      lucide.createIcons();
+    }
+    
     // --- View Switching ---
     function switchView(view) {
       currentView = view;
